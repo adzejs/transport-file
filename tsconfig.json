@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "moduleResolution": "node",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "allowJs": true,
+    "strict": true,
+    "outDir": "dist",
+    "lib": ["DOM", "ES2015"],
+    "declaration": true,
+    "preserveConstEnums": true,
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*", "src/demo_funcs.ts"],
+  "tsc-alias": {
+    "resolveFullPaths": true,
+    "verbose": false
+  }
+}
