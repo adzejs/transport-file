@@ -2,6 +2,7 @@
 dist
 .cache
 .DS_Store
+temp
 
 # Logs
 logs

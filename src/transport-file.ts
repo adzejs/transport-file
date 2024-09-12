@@ -1,29 +1,18 @@
-import adze, { LogData } from '../..';
+import adze, { LogData, Middleware } from 'adze';
 import type FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import type { FileStreamRotatorOptions } from 'file-stream-rotator/src/types';
-import { Middleware, TargetEnvironment } from '../../middleware';
 
 /**
  * Options for the AdzeFileRotator middleware.
  */
-export interface AdzeFileTransportOptions
-  extends Omit<Partial<FileStreamRotatorOptions>, 'filename'> {
+export interface AdzeTransportFileOptions extends Partial<FileStreamRotatorOptions> {
   directory?: string;
-  frequency?: 'daily';
-  date_format?: string;
-  size?: string;
-  max_logs?: string;
-  audit_file?: string;
-  extension?: string;
-  create_symlink?: boolean;
-  symlink_name?: string;
-  compressOnRotate?: boolean;
 }
 
 /**
  * Default options for the AdzeFileRotator middleware.
  */
-const defaultOpts: AdzeFileTransportOptions = {
+const defaultOpts: AdzeTransportFileOptions = {
   directory: './logs',
   frequency: 'daily',
   date_format: 'YYYY-MM-DD',
@@ -39,31 +28,34 @@ const defaultOpts: AdzeFileTransportOptions = {
 /**
  * Wraps the file-stream-rotator package to provide middleware for writing rotating log files.
  */
-export class AdzeFileTransport extends Middleware {
-  protected targetEnvironment: TargetEnvironment = 'node';
+export class AdzeTransportFile extends Middleware {
+  /**
+   * The directory path where log files will be written.
+   */
+  private directory = './logs';
 
-  private directory: string = './logs';
+  /**
+   * Options for the file stream.
+   */
+  private options: AdzeTransportFileOptions;
 
-  private compressOnRotate: boolean = false;
-
-  private options: AdzeFileTransportOptions;
-
+  /**
+   * The file stream rotator instance.
+   */
   private logStream?: FileStreamRotator;
 
-  constructor(options: AdzeFileTransportOptions = {}) {
-    super();
-    const { directory, compressOnRotate, ..._opts } = options;
+  constructor(options: AdzeTransportFileOptions = {}) {
+    super('server');
+    const { directory, ..._opts } = options;
     this.directory = directory ?? this.directory;
-    this.compressOnRotate = compressOnRotate ?? this.compressOnRotate;
     this.options = { ...defaultOpts, ..._opts };
   }
 
-  protected async loadBrowserDependencies(): Promise<void> {}
-
-  protected async loadNodeDependencies(): Promise<void> {
-    const lib = await import('file-stream-rotator');
-    const stream = lib.getStream({
-      filename: `${this.directory}/log-%DATE%`,
+  protected async loadServerDependencies(): Promise<void> {
+    const rotateLib = await import('file-stream-rotator');
+    const filename = this.options.filename ?? `${this.directory}/log-%DATE%`;
+    const stream = rotateLib.getStream({
+      filename,
       ...this.options,
     }) as unknown;
     this.logStream = stream as FileStreamRotator;
@@ -73,7 +65,7 @@ export class AdzeFileTransport extends Middleware {
    * Target the afterTerminated hook to write terminated logs to the file stream.
    */
   public afterTerminated({ data }: adze) {
-    if (this.environment === 'node') {
+    if (this.environment === 'server') {
       if (data && data.message.length > 0) {
         this.writeLog(data);
       }

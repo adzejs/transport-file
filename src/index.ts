@@ -1,3 +1,3 @@
-import { AdzeFileTransport } from './file-transport';
-export * from './file-transport';
-export default AdzeFileTransport;
+import { AdzeTransportFile } from './transport-file';
+export * from './transport-file';
+export default AdzeTransportFile;
