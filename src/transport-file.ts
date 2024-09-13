@@ -1,4 +1,4 @@
-import adze, { LogData, Middleware } from 'adze';
+import adze, { Middleware } from 'adze';
 import type FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import type { FileStreamRotatorOptions } from 'file-stream-rotator/src/types';
 
@@ -44,6 +44,11 @@ export class AdzeTransportFile extends Middleware {
    */
   private logStream?: FileStreamRotator;
 
+  /**
+   * Dependency for stripping ANSI characters from log messages.
+   */
+  private stripAnsi?: typeof import('strip-ansi').default;
+
   constructor(options: AdzeTransportFileOptions = {}) {
     super('server');
     const { directory, ..._opts } = options;
@@ -53,11 +58,13 @@ export class AdzeTransportFile extends Middleware {
 
   protected async loadServerDependencies(): Promise<void> {
     const rotateLib = await import('file-stream-rotator');
+    const stripAnsiLib = await import('strip-ansi');
     const filename = this.options.filename ?? `${this.directory}/log-%DATE%`;
     const stream = rotateLib.getStream({
       filename,
       ...this.options,
     }) as unknown;
+    this.stripAnsi = stripAnsiLib.default;
     this.logStream = stream as FileStreamRotator;
   }
 
@@ -67,7 +74,7 @@ export class AdzeTransportFile extends Middleware {
   public afterTerminated({ data }: adze) {
     if (this.environment === 'server') {
       if (data && data.message.length > 0) {
-        this.writeLog(data);
+        this.writeLog(this.cleanAnsi(data.message));
       }
     }
   }
@@ -75,9 +82,20 @@ export class AdzeTransportFile extends Middleware {
   /**
    * Write a log to the log file stream.
    */
-  private writeLog(data: LogData) {
+  private writeLog(message: string): void {
     if (this.logStream) {
-      this.logStream.write(data.message.join('') + '\n');
+      console.log(message);
+      this.logStream.write(message + '\n');
     }
+  }
+
+  /**
+   * Cleans the message of any ANSI characters.
+   */
+  private cleanAnsi(message: unknown[]): string {
+    if (this.stripAnsi) {
+      return this.stripAnsi(message.join(''));
+    }
+    return message.join('');
   }
 }

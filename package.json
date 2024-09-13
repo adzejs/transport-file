@@ -65,7 +65,8 @@
     "**/*": "prettier --write --ignore-unknown"
   },
   "dependencies": {
-    "file-stream-rotator": "^1.0.0"
+    "file-stream-rotator": "^1.0.0",
+    "strip-ansi": "^7.1.0"
   },
   "size-limit": [
     {
