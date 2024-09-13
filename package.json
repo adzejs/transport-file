@@ -22,6 +22,9 @@
     "type": "git",
     "url": "git+https://github.com/adzejs/transport-file.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "typescript",
     "logging",
