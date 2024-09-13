@@ -84,7 +84,6 @@ export class AdzeTransportFile extends Middleware {
    */
   private writeLog(message: string): void {
     if (this.logStream) {
-      console.log(message);
       this.logStream.write(message + '\n');
     }
   }
