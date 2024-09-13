@@ -31,7 +31,7 @@ describe('log filtering', () => {
     });
 
     adze.info('This is a test log message.');
-
+    console.log(fn.mock.calls);
     const line = fn.mock.calls[0][0].message.join('').trim();
     expect(line).toBe('[testdate] INFO: This is a test log message.');
   });

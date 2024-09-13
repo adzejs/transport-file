@@ -1,4 +1,4 @@
-import adze, { LogData, Middleware } from 'adze';
+import adze, { LevelConfiguration, LogData, Middleware, StandardFormatter } from 'adze';
 import type FileStreamRotator from 'file-stream-rotator/lib/FileStreamRotator';
 import type { FileStreamRotatorOptions } from 'file-stream-rotator/src/types';
 
@@ -64,10 +64,20 @@ export class AdzeTransportFile extends Middleware {
   /**
    * Target the afterTerminated hook to write terminated logs to the file stream.
    */
-  public afterTerminated({ data }: adze) {
+  public afterTerminated(log: adze) {
+    const { data } = log;
+    const formatter = new StandardFormatter(log.configuration, {
+      level: data?.level,
+      levelName: data?.levelName,
+      style: data?.style,
+      terminalStyle: data?.terminalStyle,
+      emoji: data?.emoji,
+    } as LevelConfiguration);
+    const message = formatter.print({}, data?.timestamp ?? '', data?.args ?? []);
+    console.log('MSG', message);
     if (this.environment === 'server') {
       if (data && data.message.length > 0) {
-        this.writeLog(data);
+        this.writeLog(message);
       }
     }
   }
@@ -75,9 +85,9 @@ export class AdzeTransportFile extends Middleware {
   /**
    * Write a log to the log file stream.
    */
-  private writeLog(data: LogData) {
+  private writeLog(message: unknown[]) {
     if (this.logStream) {
-      this.logStream.write(data.message.join('') + '\n');
+      this.logStream.write(message.join('') + '\n');
     }
   }
 }
