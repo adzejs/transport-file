@@ -3,6 +3,7 @@
   "description": "AdzeJS middleware to write logs to rotating log files.",
   "version": "0.1.0",
   "main": "dist/index.js",
+  "module": "dist/index.js",
   "type": "module",
   "engines": {
     "node": ">=18.19.0"
