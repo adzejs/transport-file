@@ -6,7 +6,38 @@ import type { FileStreamRotatorOptions } from 'file-stream-rotator/src/types';
  * Options for the AdzeFileRotator middleware.
  */
 export interface AdzeTransportFileOptions extends Partial<FileStreamRotatorOptions> {
+  /**
+   * Shortcut property for defining the target log directory and audit file directory.
+   */
   directory?: string;
+  /**
+   * Callback for hooking into the open event.
+   */
+  onOpen?: () => void;
+  /**
+   * Callback for hooking into the close event.
+   */
+  onClose?: () => void;
+  /**
+   * Callback for hooking into the error event.
+   */
+  onError?: (err: Error) => void;
+  /**
+   * Callback for hooking into the finish event.
+   */
+  onFinish?: () => void;
+  /**
+   * Callback for hooking into the rotate event when a log file is rotated.
+   */
+  onRotate?: () => void;
+  /**
+   * Callback for hooking into the new file event when a new log file is created.
+   */
+  onNew?: (newFile: string) => void;
+  /**
+   * Callback for hooking into the log removed event when a log file is removed.
+   */
+  onLogRemoved?: (date: number, name: string, hash: string) => void;
 }
 
 /**
@@ -35,6 +66,11 @@ export class AdzeTransportFile extends Middleware {
   private directory = './logs';
 
   /**
+   * The path to the audit file used by file-stream-rotator.
+   */
+  private audit_file?: string;
+
+  /**
    * Options for the file stream.
    */
   private options: AdzeTransportFileOptions;
@@ -53,6 +89,7 @@ export class AdzeTransportFile extends Middleware {
     super('server');
     const { directory, ..._opts } = options;
     this.directory = directory ?? this.directory;
+    this.audit_file = directory ? this.directory + '/audit.json' : undefined;
     this.options = { ...defaultOpts, ..._opts };
   }
 
@@ -63,9 +100,18 @@ export class AdzeTransportFile extends Middleware {
     const stream = rotateLib.getStream({
       filename,
       ...this.options,
+      audit_file: this.audit_file,
     }) as unknown;
     this.stripAnsi = stripAnsiLib.default;
     this.logStream = stream as FileStreamRotator;
+    // Register the event listeners if they are set.
+    if (this.options.onOpen) this.logStream.on('open', this.options.onOpen);
+    if (this.options.onClose) this.logStream.on('close', this.options.onClose);
+    if (this.options.onError) this.logStream.on('error', this.options.onError);
+    if (this.options.onFinish) this.logStream.on('finish', this.options.onFinish);
+    if (this.options.onRotate) this.logStream.on('rotate', this.options.onRotate);
+    if (this.options.onNew) this.logStream.on('new', this.options.onNew);
+    if (this.options.onLogRemoved) this.logStream.on('logRemoved', this.options.onLogRemoved);
   }
 
   /**
@@ -96,5 +142,12 @@ export class AdzeTransportFile extends Middleware {
       return this.stripAnsi(message.join(''));
     }
     return message.join('');
+  }
+
+  /**
+   * Ends the file stream.
+   */
+  public end(message = 'File stream closed.'): void {
+    this.logStream?.end(message);
   }
 }

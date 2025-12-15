@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { vi, afterEach, describe, expect, test } from 'vitest';
 import adze, { setup, teardown } from 'adze';
+import { afterEach, describe, expect, test, vi } from 'vitest';
 import TransportFile from '../src';
 
 /**
